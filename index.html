@@ -1,0 +1,1067 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Le Pastis Pong de Youky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout : la table vue de dessus en portrait — scores en haut, les verres adverses au fond, tes verres devant toi, tu lances depuis le bas de l'écran */
+[hidden]{display:none!important}
+:root{
+  --night:#0d0b0a; --panel:#1a1614; --paper:#f4ecd8; --ink-dark:#2a201a; --pastis:#ffd23f; --orange:#f27a1a; --pink:#ff4fa3; --red:#e8453c; --ink:#f1ebe4; --muted:#9d948b;
+  --display:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --text:"VT323", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--night); color:var(--ink); font-family:var(--text); font-size:20px; overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none}
+#app{height:100%; box-sizing:border-box; padding-block:max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-bottom)); padding-inline:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px}
+#bar{display:flex; align-items:center; justify-content:space-between; gap:8px; max-width:100%}
+#bar .brand{font-family:var(--display); font-size:10px; color:var(--pastis); text-shadow:0 0 8px rgba(255,210,63,.6); white-space:nowrap}
+#bar .tools{display:flex; gap:6px}
+.tbtn{font-family:var(--display); font-size:9px; color:var(--ink); background:var(--panel); border:2px solid #3a302a; border-radius:4px; padding:7px 9px; cursor:pointer; white-space:nowrap}
+.tbtn[aria-pressed="true"]{color:var(--muted)}
+#stage{position:relative; border:3px solid #c9a26b; border-radius:8px; box-shadow:0 0 18px rgba(201,162,107,.3); background:var(--night); max-width:100%}
+#game{display:block; image-rendering:pixelated; image-rendering:crisp-edges; touch-action:none}
+#superbar{display:flex; gap:8px; width:min(100%, 380px)}
+#super{flex:1; height:52px; border:0; border-radius:12px; font-family:var(--display); font-size:12px; letter-spacing:1px; color:#1a1200; background:linear-gradient(90deg, #f3ead0, #ffd23f, #f3ead0); background-size:200% 100%; box-shadow:0 5px 0 #b88a00; cursor:pointer; animation:shine 1.6s linear infinite}
+#super:disabled{background:#2a2420; color:var(--muted); box-shadow:0 5px 0 #1a1512; cursor:default; animation:none; font-size:10px}
+@keyframes shine{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){#super{animation:none}}
+#card{position:fixed; inset:0; z-index:12; display:flex; align-items:center; justify-content:center; background:rgba(10,8,7,.94); padding:16px; box-sizing:border-box; text-align:center; overflow:auto}
+#card .in{display:flex; flex-direction:column; align-items:center; gap:10px; max-width:420px; width:100%; margin:auto}
+#card .ico{width:84px; height:98px; image-rendering:pixelated}
+#card h2{margin:0; font-family:var(--display); font-size:14px; line-height:1.5; color:var(--c, var(--pastis)); text-wrap:balance}
+#card p{margin:0; font-size:21px; line-height:1.1; white-space:pre-line; text-align:var(--al, center)}
+#card .btns{display:flex; flex-direction:column; gap:8px; width:100%}
+#card .btns button{font-family:var(--display); font-size:11px; line-height:1.4; color:#1a1200; background:var(--c, var(--pastis)); border:0; border-radius:10px; padding:15px 14px; box-shadow:0 5px 0 rgba(0,0,0,.4); cursor:pointer}
+#card .btns button.alt{background:#2a2420; color:var(--ink)}
+#card .btns button.sa{display:grid; grid-template-columns:40px 1fr; gap:10px; align-items:center; text-align:left; background:var(--paper); color:var(--ink-dark); padding:8px 12px}
+#card .btns button.sa canvas{width:40px; height:40px; image-rendering:pixelated}
+#card .btns button.sa b{display:block; font-weight:400; font-size:10px; color:#c0392b; margin-bottom:4px}
+#card .btns button.sa span{font-family:var(--text); font-size:18px; line-height:1}
+#overlay{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,8,7,.9); overflow:auto; padding:10px; box-sizing:border-box}
+.card{width:100%; max-width:420px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; margin:auto}
+.grp{display:flex; flex-direction:column; align-items:center; gap:10px; width:100%}
+.duo{display:flex; gap:10px; align-items:end}
+.duo canvas{width:56px; height:65px; image-rendering:pixelated}
+.duo canvas.cup{width:36px; height:36px; margin-bottom:14px}
+.eyebrow{font-family:var(--display); font-size:9px; color:#c9a26b; letter-spacing:1.5px; margin:0; text-transform:uppercase}
+h1{font-family:var(--display); font-size:19px; line-height:1.4; margin:0; color:var(--pastis); text-shadow:0 0 6px rgba(255,210,63,.8), 0 0 22px rgba(255,210,63,.4); text-wrap:balance}
+#sub{margin:0; font-size:20px; line-height:1.1; max-width:38ch}
+.seg{display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; width:100%; max-width:360px}
+.seg button{font-family:var(--display); font-size:9px; line-height:1.5; padding:11px 4px; border-radius:4px; border:2px solid #5a4a2a; background:var(--panel); color:var(--ink); cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--orange); color:#1a1200; border-color:var(--orange)}
+.lbl{font-family:var(--display); font-size:8px; color:var(--muted); margin:2px 0 -4px}
+#plist{display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; max-width:360px}
+#plist label{display:flex; flex-direction:column; gap:3px; text-align:left; min-width:0}
+#plist label span{font-family:var(--display); font-size:7px; color:var(--c)}
+#plist input{width:100%; box-sizing:border-box; min-width:0; font-family:var(--text); font-size:20px; padding:6px 8px; border-radius:4px; border:3px solid var(--c); background:var(--paper); color:var(--ink-dark)}
+.roster{display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; width:100%; max-width:380px}
+.roster button{background:var(--panel); border:2px solid #3a302a; border-radius:6px; padding:5px 2px; display:flex; flex-direction:column; align-items:center; gap:3px; font-family:var(--text); font-size:15px; line-height:1; color:var(--ink); cursor:pointer; min-width:0}
+.roster button:disabled{opacity:.45; cursor:default}
+.roster button.done{border-color:#7fcf5a}
+.roster button[aria-pressed="true"]{border-color:var(--pastis); box-shadow:0 0 0 2px var(--pastis)}
+.roster canvas{width:40px; height:47px; image-rendering:pixelated}
+.roster b{font-family:var(--display); font-size:6px; font-weight:400; color:var(--muted)}
+.opt{display:flex; align-items:center; gap:8px; font-size:19px; cursor:pointer}
+.opt input{width:22px; height:22px; accent-color:var(--orange)}
+.palm{width:100%; max-width:360px; background:var(--paper); color:var(--ink-dark); border-radius:3px; padding:8px 12px; box-shadow:0 3px 0 #b9a888; text-align:left; box-sizing:border-box}
+.palm h2{font-family:var(--display); font-size:9px; color:#c0392b; margin:0 0 6px; text-align:center}
+.palm ol{margin:0; padding:0; list-style:none; display:grid; gap:2px; font-size:19px; line-height:1}
+.palm li{display:flex; justify-content:space-between; gap:8px}
+.palm li span:last-child{color:#7a5a3a; white-space:nowrap}
+.hint{margin:0; font-size:18px; color:var(--muted); line-height:1.15}
+.btnrow{display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap}
+#start{font-family:var(--display); font-size:12px; text-transform:uppercase; color:#1a1200; background:var(--pastis); border:0; border-radius:6px; padding:15px 18px; cursor:pointer; box-shadow:0 4px 0 #b88a00}
+#rules{font-family:var(--display); font-size:10px; color:var(--ink); background:var(--panel); border:2px solid #5a4a2a; border-radius:6px; padding:13px 12px; cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--pink); outline-offset:2px}
+
+/* ===== confort mobile : pas de zoom, menus plein écran et lisibles ===== */
+*{-webkit-touch-callout:none; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{overscroll-behavior:none}
+#game{touch-action:none}
+button,label,input,select{touch-action:pan-x pan-y}
+#overlay{position:fixed !important; inset:0; z-index:10; background-color:rgba(10,8,7,.95) !important;
+  padding:16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)) !important}
+#overlay > .card{margin:auto}
+#bar{min-width:0}
+#bar .brand{min-width:0; overflow:hidden; text-overflow:ellipsis}
+#bar .tools,#bar .row{flex:none}
+@media (pointer:coarse){
+  #overlay .eyebrow{font-size:9px}
+  #overlay .rules b,#overlay .legend b,#overlay .keys dt,.palm h2,.menu .menu-title{font-size:9px}
+  #overlay .rules,#overlay .legend li,#overlay .keys{font-size:19px}
+  #overlay .stats{font-size:9px}
+  #overlay .hint{font-size:18px}
+  #overlay #sub{font-size:21px}
+  .tbtn{padding:9px 9px}
+}
+
+/* ===== ce jeu se joue en portrait ===== */
+#mk-rot{display:none}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:560px){
+  html:not(.mk-forced) #mk-rot{display:flex}
+}
+#mk-rot{position:fixed; inset:0; z-index:15; background:rgba(10,8,7,.97); align-items:center; justify-content:center; text-align:center;
+  color:#f1ebe4; font-family:"VT323", ui-monospace, monospace; font-size:22px; padding:16px; box-sizing:border-box}
+#mk-rot .mk-phone{font-size:46px; display:inline-block; animation:mkturn 2s ease-in-out infinite}
+@keyframes mkturn{0%,25%{transform:rotate(-90deg)}55%,100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){#mk-rot .mk-phone{animation:none}}
+#mk-rot b{display:block; font-family:"Press Start 2P", ui-monospace, monospace; font-size:12px; font-weight:400; color:#ffd23f; margin:12px 0 8px; line-height:1.5}
+#mk-rot p{margin:0 0 14px; color:#c9c0b6}
+#mk-rot button{font-family:"Press Start 2P", ui-monospace, monospace; font-size:9px; color:#f1ebe4; background:#1a1614; border:2px solid #3a302a; border-radius:4px; padding:10px 12px; cursor:pointer}
+</style>
+
+<div id="app">
+  <div id="bar">
+    <span class="brand">LE PASTIS PONG DE YOUKY</span>
+    <div class="tools">
+      <button class="tbtn" id="mute" type="button" aria-pressed="false">♪ SON</button>
+      <button class="tbtn" id="menu" type="button">MENU</button>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="game" width="360" height="600" aria-label="La table de pastis pong avec les pyramides de verres"></canvas>
+    <div id="overlay">
+      <div class="card">
+        <div class="duo"><canvas id="c-hero" width="24" height="28"></canvas><canvas id="c-cup" class="cup" width="32" height="32"></canvas><canvas id="c-bear" width="24" height="28"></canvas></div>
+        <p class="eyebrow">Le pong de comptoir… façon apéro</p>
+        <h1>LE PASTIS PONG DE YOUKY</h1>
+        <p id="sub">Lance ta balle d'une pichenette pour la faire tomber dans les verres de pastis d'en face. Chaque verre touché disparaît : le premier qui n'a plus de verre a perdu !</p>
+        <div class="seg" id="mode" role="group" aria-label="Mode"><button type="button" data-m="story" aria-pressed="true">TOURNOI DU COMPTOIR</button><button type="button" data-m="multi" aria-pressed="false">À PLUSIEURS</button></div>
+        <div class="grp" id="storyset">
+          <div class="roster" id="roster"></div>
+          <p class="hint" id="storyhint"></p>
+        </div>
+        <div class="grp" id="multiset" hidden>
+          <p class="lbl">JOUEURS (2 = UN CONTRE UN, 3-4 = PAR ÉQUIPES)</p>
+          <div class="seg" id="nbp" role="group" aria-label="Nombre de joueurs"><button type="button" data-n="2" aria-pressed="true">2</button><button type="button" data-n="3" aria-pressed="false">3</button><button type="button" data-n="4" aria-pressed="false">4</button></div>
+          <label class="opt"><input type="checkbox" id="gage"> Gages sans alcool</label>
+        </div>
+        <div id="plist"></div>
+        <div class="btnrow"><button id="start" type="button">Jouer</button><button id="rules" type="button">RÈGLES</button></div>
+        <div class="palm" id="palm"></div>
+      </div>
+    </div>
+  </div>
+  <div id="superbar"><button id="super" type="button" disabled>LE VERRE N'EST PAS ENCORE LOUCHE…</button></div>
+</div>
+
+<div id="card" hidden><div class="in"><canvas class="ico" id="card-ico" width="24" height="28"></canvas><h2 id="card-title"></h2><p id="card-text"></p><div class="btns" id="card-btns"></div></div></div>
+
+<div id="mk-rot" role="dialog" aria-label="Orientation conseillée"><div><span class="mk-phone" aria-hidden="true">📱</span><b>CE JEU SE JOUE EN PORTRAIT</b><p>Tourne ton téléphone à la verticale, c'est bien plus confortable.</p><button type="button" id="mk-rot-go">Jouer quand même</button></div></div>
+<script>
+/* ===== kit mobile commun : anti-zoom, mise à l'échelle, commandes par pouce ===== */
+(function () {
+  var vp = document.querySelector('meta[name=viewport]');
+  if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+  vp.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+  var stop = function (e) { e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(function (t) { document.addEventListener(t, stop, {passive:false}); });
+  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, {passive:false});
+  var lastEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now(), t = e.target;
+    var interactive = t && t.closest && t.closest('button,input,label,select,textarea,a');
+    if (!interactive && now - lastEnd < 350) e.preventDefault();
+    lastEnd = now;
+  }, {passive:false});
+  document.addEventListener('contextmenu', function (e) { if (!(e.target.closest && e.target.closest('#overlay,input,textarea'))) e.preventDefault(); });
+  var go = document.getElementById('mk-rot-go');
+  if (go) go.addEventListener('click', function () { document.documentElement.classList.add('mk-forced'); window.dispatchEvent(new Event('resize')); });
+
+  // regroupe les boutons tactiles : un bloc à gauche, un bloc à droite
+  window.mkPads = function (contId, L, R, flat) {
+    var c = document.getElementById(contId); if (!c) return;
+    var l = document.createElement('div'), r = document.createElement('div');
+    l.className = 'mkL' + (flat ? ' flat' : ''); r.className = 'mkR';
+    L.forEach(function (id) { var b = document.getElementById(id); if (b) l.appendChild(b); });
+    R.forEach(function (id) { var b = document.getElementById(id); if (b) r.appendChild(b); });
+    c.appendChild(l); if (R.length) c.appendChild(r); else c.classList.add('noR');
+    c.classList.add('mk');
+  };
+
+  // le jeu prend toute la place disponible, en portrait comme en paysage
+  window.mkFit = function (canvas, W, H) {
+    var app = document.getElementById('app'), stage = document.getElementById('stage'), bar = document.getElementById('bar');
+    var vw = document.documentElement.clientWidth;
+    var vh = window.visualViewport ? Math.min(window.visualViewport.height, window.innerHeight) : window.innerHeight;
+    var cs = getComputedStyle(app);
+    var px = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    var gr = parseFloat(cs.rowGap) || 0, gc = parseFloat(cs.columnGap) || 0;
+    var border = 6, aw, ah;
+    var side = cs.display === 'grid' && app.querySelector('.mkL');
+    if (side) {
+      var L = app.querySelector('.mkL'), R = app.querySelector('.mkR');
+      aw = vw - px - (L ? L.offsetWidth : 0) - (R ? R.offsetWidth : 0) - 2 * gc - border;
+      ah = vh - py - bar.offsetHeight - gr - border;
+      bar.style.width = '';
+    } else {
+      var other = 0, n = 0;
+      Array.prototype.forEach.call(app.children, function (el) {
+        if (el === stage || el.hidden) return;
+        var d = getComputedStyle(el); if (d.display === 'none' || d.position === 'fixed' || d.position === 'absolute') return;
+        other += el.offsetHeight; n++;
+      });
+      aw = vw - px - border; ah = vh - py - other - n * gr - border;
+    }
+    var s = Math.min(aw / W, ah / H);
+    if (s > 1) s = Math.floor(s * 4) / 4;
+    s = Math.max(0.3, s);
+    canvas.style.width = Math.floor(W * s) + 'px'; canvas.style.height = Math.floor(H * s) + 'px';
+    if (!side) bar.style.width = (Math.floor(W * s) + border) + 'px';
+  };
+})();
+</script>
+<script>
+(() => {
+'use strict';
+const W = 360, H = 600, STEP = 1 / 120;
+const CX = 180, CY = 285, CR = 15, BR = 5;                 // centre de la table, rayon des verres et de la balle
+const TX0 = 40, TX1 = 320, TY0 = 72, TY1 = 498;            // la table
+const ORIGIN = [{x:180, y:560}, {x:180, y:10}];            // la main de chaque équipe
+const FONT = '8px "Press Start 2P", monospace', SMALL = '7px "Press Start 2P", monospace', MID = '11px "Press Start 2P", monospace', BIG = '16px "Press Start 2P", monospace';
+const rand = (a, b) => a + Math.random() * (b - a);
+const ri = n => Math.floor(Math.random() * n);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+const rot = (a, x, y) => ({x:x * Math.cos(a) - y * Math.sin(a), y:x * Math.sin(a) + y * Math.cos(a)});
+const $ = id => document.getElementById(id);
+const PCOLS = ['#f27a1a', '#2f8fd6', '#4cc06a', '#ff4fa3'];
+const TEES = [null, '#2f6fb5', '#3c8a4a', '#d04a8a'];
+const GAGES = ['Chante un refrain', 'Imite le patron du bar', 'Un verre d\'eau cul sec', 'Fais un compliment à chacun', 'Raconte une blague', 'Mime une balle qui tombe dans un verre', 'Sers à boire à tout le monde', 'Parle en chuchotant jusqu\'à la prochaine partie', 'Fais un câlin à un nounours (ou à ton voisin)', 'Danse 10 secondes sans musique'];
+function esc(t) { return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'})[c]); }
+function loadJSON(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+/* ---------- son ---------- */
+let actx = null, master = null, nbuf = null, muted = false;
+try { muted = localStorage.getItem('pastisman-muted') === '1'; } catch (e) {}
+function initAudio() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = new AC(); master = actx.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(actx.destination);
+    nbuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+function tone(f, dur, o = {}) {
+  if (!actx || muted) return;
+  const t0 = actx.currentTime + (o.delay || 0), osc = actx.createOscillator(), g = actx.createGain();
+  osc.type = o.type || 'square'; osc.frequency.setValueAtTime(f, t0); if (o.slideTo) osc.frequency.exponentialRampToValueAtTime(o.slideTo, t0 + dur);
+  const v = o.vol || 0.1; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(master); osc.start(t0); osc.stop(t0 + dur + 0.03);
+}
+function noise(dur, o = {}) {
+  if (!actx || muted) return;
+  const t0 = actx.currentTime + (o.delay || 0), src = actx.createBufferSource(); src.buffer = nbuf;
+  const f = actx.createBiquadFilter(); f.type = o.filter || 'bandpass'; f.frequency.value = o.freq || 2000; f.Q.value = o.q || 1;
+  const g = actx.createGain(); g.gain.setValueAtTime(o.vol || 0.1, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f).connect(g).connect(master); src.start(t0, Math.random() * 0.5); src.stop(t0 + dur + 0.05);
+}
+const arp = (n, gap, o = {}) => n.forEach((f, i) => tone(f, gap * 1.6, {...o, delay:(o.delay || 0) + i * gap}));
+const SFX = {
+  throw: () => noise(0.18, {freq:1600, vol:0.06, q:0.7}),
+  pok: () => { tone(1800, 0.04, {type:'triangle', vol:0.16}); tone(900, 0.05, {type:'sine', vol:0.08}); },
+  rim: () => { for (let i = 0; i < 5; i++) tone(2400 + i * 120, 0.05, {type:'triangle', vol:0.06, delay:i * 0.07}); },
+  plouf: () => { noise(0.3, {freq:700, vol:0.18, filter:'lowpass'}); const b = 300 + Math.random() * 150; tone(b, 0.12, {type:'sine', vol:0.18, slideTo:b * 2.6}); tone(b * 1.7, 0.08, {type:'sine', vol:0.08, slideTo:b * 3, delay:0.08}); },
+  miss: () => tone(200, 0.2, {type:'sawtooth', vol:0.05, slideTo:110}),
+  block: () => { tone(160, 0.12, {type:'square', vol:0.1}); noise(0.1, {freq:500, vol:0.1}); },
+  fire: () => { arp([523, 659, 784, 1047, 1319], 0.06, {vol:0.07}); noise(0.5, {freq:3000, vol:0.06}); },
+  rerack: () => arp([440, 554, 659], 0.06, {type:'triangle', vol:0.08}),
+  louche: () => arp([784, 988, 1175, 1568, 1976], 0.07, {type:'triangle', vol:0.12}),
+  super: () => { arp([392, 523, 659, 784, 1047], 0.06, {vol:0.07}); noise(0.4, {freq:2500, vol:0.06}); },
+  note: () => arp([523, 659, 784, 659, 880, 1047], 0.1, {type:'triangle', vol:0.12}),
+  wind: () => noise(0.9, {freq:450, vol:0.22, filter:'lowpass'}),
+  trap: () => { tone(220, 0.15, {type:'square', vol:0.1}); tone(330, 0.2, {type:'square', vol:0.1, delay:0.12}); },
+  hug: () => { tone(330, 0.3, {type:'sine', vol:0.12, slideTo:220}); tone(440, 0.3, {type:'sine', vol:0.08, slideTo:290, delay:0.1}); },
+  shake: () => { noise(0.5, {freq:250, vol:0.25, filter:'lowpass'}); tone(90, 0.4, {type:'sawtooth', vol:0.08, slideTo:50}); },
+  ghost: () => { tone(880, 0.4, {type:'sine', vol:0.08, slideTo:440}); tone(1320, 0.3, {type:'sine', vol:0.04, slideTo:660, delay:0.1}); },
+  turn: () => tone(1320, 0.1, {type:'sine', vol:0.08}),
+  win: () => arp([523, 659, 784, 1047, 784, 1047, 1319, 1568], 0.09, {vol:0.06}),
+  lose: () => arp([523, 466, 415, 392, 311], 0.22, {type:'triangle', vol:0.15})
+};
+
+/* ---------- personnages ---------- */
+const HERO = [
+"........KKKKKKKK........","......hKKqKKKKqKKh......",".....hhKqKKKqKKqKhh.....","....hhKKKKKKKKKKKKhh....",
+"...hhKKKKKKKKKKKKKKhh...","...hgKKKKKKKKKKKKKKgh...","...hKKKKKKKKKKKKKKKKh...","...hKbbbbKKKKKKbbbbKh...",
+"..FFFFFFFFFFFFFFFFFFFF..",".kFllllllllFFllllllllFk.",".kFllllllllFFllllllllFk.",".kFllllllllFFllllllllFk.",
+"..FFFFFFFFFKKFFFFFFFFF..","...KKKKKKKKkkKKKKKKKK...","...KrrKKKKkkkkKKKKrrK...","...BKKKbbbbbbbbbbKKKB...",
+"...BBbBbBBBBBBBBbBbBB...","...BbBBbBBbbbbBBbBBbB...","....BbBbBBbBBbBBbBbB....",".....BBbBbBBbbBbBbB.....",
+".......BbBBbbBBbB.......",".........kkkkkk.........","......TTTkkkkkkTTT......","...TTTTTTTkkkkTTTTTTT...",
+".TTTTTTTTTTTTTTTTTTTTTT.","TTTTTTTTTTTTTTTTTTTTTTTT","TTTtTTTTTTTTTTTTTTTTtTTT","TTTtTTTTTTTTTTTTTTTTtTTT"];
+const FACE = [
+"........................","........................",".......hhhhhhhhhh.......",".....hhhhhhhhhhhhhh.....",
+"....hhKKKKKKKKKKKKhh....","...hhKKKKKKKKKKKKKKhh...","...hKKKKKKKKKKKKKKKKh...","...hKKKKKKKKKKKKKKKKh...",
+"...KKbbbKKKKKKKKbbbKK...","...KKKKKKKKKKKKKKKKKK...","..kKKKKKKKKKKKKKKKKKKk..","..kKKKKKKKKKKKKKKKKKKk..",
+"...KKKKKKKKkkKKKKKKKK...","...KrrKKKKkkkkKKKKrrK...","...KKKKKKKKKKKKKKKKKK...","...KKKKKKKKKKKKKKKKKK...",
+"....KKKKKKKKKKKKKKKK....","....KKKKKKKKKKKKKKKK....",".....KKKKKKKKKKKKKK.....",".......KKKKKKKKKK.......",
+".........kkkkkk.........",".........kkkkkk.........","......SSSkkkkkkSSS......","...SSSSSSSkkkkSSSSSSS...",
+".SSSSSSSSSSSSSSSSSSSSSS.","SSSSSSSSSSSSSSSSSSSSSSSS","SSSsSSSSSSSSSSSSSSSSsSSS","SSSsSSSSSSSSSSSSSSSSsSSS"];
+const BASECOL = {K:'#e7b292', k:'#c98d6e', r:'#de8f7c', q:'#c4a18b', h:'#4a433d', g:'#6f6861', b:'#3e3833', B:'#7c766f',
+  F:'#2c2e33', l:'#dcc3b3', e:'#2a2420', w:'#ffffff', m:'#7a3a34', W:'#fbf6ee', T:'#f27a1a', t:'#c95e0d'};
+const rowFill = (set, r, c0, c1, ch) => { for (let c = c0; c <= c1; c++) set(c, r, ch); };
+function shade(hex, k) {
+  const p = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
+  return '#' + p.map(v => clamp(Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k)), 0, 255).toString(16).padStart(2, '0')).join('');
+}
+function mouth(set, mood) {
+  if (mood === 'grin') { for (let c = 8; c <= 15; c++) set(c, 16, 'W'); for (let c = 9; c <= 14; c++) set(c, 17, 'm'); }
+  else if (mood === 'o') { set(11, 16, 'm'); set(12, 16, 'm'); set(11, 17, 'm'); set(12, 17, 'm'); }
+  else if (mood === 'meh') { for (let c = 9; c <= 14; c++) set(c, 16, 'm'); set(8, 17, 'm'); set(15, 17, 'm'); }
+  else if (mood === 'grr') { for (let c = 8; c <= 15; c++) { set(c, 16, 'W'); set(c, 17, 'm'); } }
+  else { for (let c = 9; c <= 14; c++) set(c, 16, 'm'); set(8, 15, 'm'); set(15, 15, 'm'); }
+}
+const sprCache = new Map();
+function toCanvas24(R, col) {
+  const cv = document.createElement('canvas'); cv.width = 24; cv.height = 28; const g = cv.getContext('2d');
+  R.forEach((row, r) => row.forEach((ch, c) => { if (ch !== '.' && col[ch]) { g.fillStyle = col[ch]; g.fillRect(c, r, 1, 1); } }));
+  return cv;
+}
+function heroSpr(mood, tee) {
+  const key = 'h' + mood + (tee || ''); if (sprCache.has(key)) return sprCache.get(key);
+  const R = HERO.map(r => r.split('')), set = (c, r, ch) => { if (R[r] && c >= 0 && c < 24) R[r][c] = ch; };
+  const col = {...BASECOL};
+  set(5, 10, 'e'); set(6, 10, 'e'); set(15, 10, 'e'); set(16, 10, 'e'); set(3, 9, 'w'); set(13, 9, 'w');
+  mouth(set, mood);
+  if (mood === 'o' || mood === 'grin') for (const c of [5, 6, 7, 8, 15, 16, 17, 18]) { set(c, 7, 'K'); set(c, 6, 'b'); }
+  if (mood === 'grr') { set(8, 7, 'b'); set(9, 7, 'b'); set(14, 7, 'b'); set(15, 7, 'b'); }
+  if (tee) { col.T = tee; col.t = shade(tee, -0.25); }
+  const cv = toCanvas24(R, col); sprCache.set(key, cv); return cv;
+}
+function npcSpr(f, mood) {
+  const key = f.id + mood; if (sprCache.has(key)) return sprCache.get(key);
+  const R = FACE.map(r => r.split('')), set = (c, r, ch) => { if (R[r] && c >= 0 && c < 24) R[r][c] = ch; };
+  set(6, 10, 'e'); set(7, 10, 'e'); set(16, 10, 'e'); set(17, 10, 'e');
+  mouth(set, mood); f.deco(set);
+  const cv = toCanvas24(R, {...BASECOL, ...f.pal}); sprCache.set(key, cv); return cv;
+}
+function bottleSpr(mood) {
+  const key = 'b' + mood; if (sprCache.has(key)) return sprCache.get(key);
+  const cv = document.createElement('canvas'); cv.width = 24; cv.height = 28; const g = cv.getContext('2d');
+  const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  P(9, 0, 6, 3, '#1f5fbf'); P(9, 2, 6, 1, '#164a96'); P(10, 3, 4, 3, '#d7f0ff'); P(8, 6, 8, 2, '#c9ebff'); P(6, 8, 12, 2, '#bfe6ff'); P(5, 10, 14, 18, '#b3e0fb');
+  P(5, 24, 14, 1, '#9bd0f0'); P(5, 26, 14, 1, '#9bd0f0'); P(5, 17, 14, 6, '#2f8fd6'); P(5, 17, 14, 1, '#ffffff'); P(5, 22, 14, 1, '#ffffff'); P(7, 9, 1, 15, 'rgba(255,255,255,.75)');
+  P(8, 13, 3, 2, '#ffffff'); P(13, 13, 3, 2, '#ffffff'); P(9, 13, 2, 2, '#13233a'); P(14, 13, 2, 2, '#13233a');
+  if (mood === 'grin') { P(9, 19, 6, 2, '#ffffff'); P(10, 20, 4, 1, '#13233a'); }
+  else if (mood === 'meh' || mood === 'o') P(10, 19, 4, 2, '#13233a');
+  else { P(7, 11, 4, 1, '#13233a'); P(13, 11, 4, 1, '#13233a'); P(10, 19, 4, 1, '#ffffff'); }
+  sprCache.set(key, cv); return cv;
+}
+// Nounours : un ours en peluche rapiécé, un œil bouton, nœud papillon rouge
+function bearSpr(mood) {
+  const key = 'u' + mood; if (sprCache.has(key)) return sprCache.get(key);
+  const cv = document.createElement('canvas'); cv.width = 24; cv.height = 28; const g = cv.getContext('2d');
+  const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  const E = (cx, cy, rx, ry, c) => { g.fillStyle = c; for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) { const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry; if (dx * dx + dy * dy <= 1) g.fillRect(x, y, 1, 1); } };
+  // corps
+  E(12, 24, 10, 6, '#9a6a3e'); E(12, 24.5, 5, 3.5, '#e8c9a0');
+  P(9, 23, 1, 1, '#7a4a28'); P(11, 22, 1, 1, '#7a4a28'); P(13, 26, 1, 1, '#7a4a28');                // coutures
+  E(3, 22, 2.5, 3.5, '#9a6a3e'); E(21, 22, 2.5, 3.5, '#9a6a3e');                                    // pattes
+  // tête
+  E(5, 4, 3.5, 3.5, '#9a6a3e'); E(19, 4, 3.5, 3.5, '#9a6a3e'); E(5, 4, 1.8, 1.8, '#e8a9a0'); E(19, 4, 1.8, 1.8, '#e8a9a0');
+  E(12, 10, 9, 8, '#9a6a3e'); E(12, 14, 4.5, 3.2, '#e8c9a0');
+  P(16, 3, 4, 3, '#c0a060'); P(17, 4, 1, 1, '#8a6a30'); P(19, 3, 1, 1, '#8a6a30');                    // pièce rapiécée sur l'oreille
+  P(10, 12, 4, 2, '#2a1a10'); P(11, 12, 1, 1, '#6a4a3a');                                             // truffe
+  P(7, 9, 2, 2, '#16120f'); P(7, 9, 1, 1, '#ffffff');                                                 // œil
+  P(15, 8, 3, 3, '#c0392b'); P(16, 9, 1, 1, '#f4ecd8');                                               // œil bouton
+  if (mood === 'grr') { P(6, 7, 4, 1, '#3a2010'); P(14, 6, 4, 1, '#3a2010'); P(10, 15, 4, 1, '#3a2010'); P(9, 16, 1, 1, '#3a2010'); P(14, 16, 1, 1, '#3a2010'); }
+  else if (mood === 'meh' || mood === 'o') { P(11, 15, 2, 2, '#3a2010'); }
+  else { P(9, 15, 1, 1, '#3a2010'); P(10, 16, 4, 1, '#3a2010'); P(14, 15, 1, 1, '#3a2010'); }
+  // nœud papillon
+  P(8, 18, 3, 3, '#c0392b'); P(13, 18, 3, 3, '#c0392b'); P(11, 19, 2, 1, '#8a1c22');
+  sprCache.set(key, cv); return cv;
+}
+const BOSSES = [
+  {id:'ginette', name:'GINETTE LA SERVEUSE', short:'Ginette', sa:'guide', col:'#ff4fa3', noise:120, arena:'terrasse',
+   pal:{S:'#f4f4f0', s:'#d0d0c8', h:'#b04a2a', m:'#c0392b', A:'#2a2420'},
+   deco:set => { for (let r = 0; r < 3; r++) rowFill(set, r, 9, 14, 'h'); for (let r = 24; r < 28; r++) rowFill(set, r, 7, 16, 'A'); },
+   intro:'Trente ans à servir en terrasse. Quand son pastis est louche, elle pose un piège : elle télécommande TA balle en plein vol !',
+   winLine:'L\'addition, s\'il vous plaît ! C\'est toi qui paies !', loseLine:'Bon… je retourne servir mes clients.',
+   faille:'Sa faille : elle vise toujours le verre du milieu. Garde-le protégé et elle s\'énerve !'},
+  {id:'dede', name:'LE GROS DÉDÉ', short:'Gros Dédé', sa:'remue', col:'#4cc06a', noise:105, arena:'fete',
+   pal:{S:'#3c8a4a', s:'#2a6a34', h:'#3a2a20', H:'#c0392b', G:'#3a2a20'},
+   deco:set => { for (let r = 1; r < 4; r++) rowFill(set, r, 4, 19, 'H'); rowFill(set, 4, 4, 22, 'H'); rowFill(set, 15, 6, 17, 'G'); set(5, 16, 'G'); set(18, 16, 'G'); },
+   intro:'Quand il a le pastis louche, il secoue la table pendant ton lancer : ses verres se mélangent en plein vol !',
+   winLine:'Fanny ! Tu embrasses la Fanny, mon petit !', loseLine:'C\'est pas du jeu, c\'était même pas des boules !',
+   faille:'Sa faille : il lance comme un bourrin. Ses balles rebondissent souvent hors de la table.'},
+  {id:'bouteille', name:'LA GROSSE BOUTEILLE D\'EAU', short:'La Bouteille', sa:'bouteille', col:'#2f8fd6', noise:95, who:'bottle', arena:'plage',
+   intro:'Elle déteste le pastis. Son piège : en plein vol, une bouteille géante surgit devant ses verres pour bloquer ta balle !',
+   winLine:'Allez, un grand verre d\'eau pour te consoler !', loseLine:'Glou… je retourne au frigo.',
+   faille:'Sa faille : sa bouteille ne protège que le milieu. Vise les verres des côtés.'},
+  {id:'jojo', name:'JOJO LE BARMAN', short:'Jojo', sa:'fantome', col:'#e8453c', noise:85, arena:'bar',
+   pal:{S:'#f4f4f0', s:'#2a2a34', h:'#141414', G:'#141414', X:'#c0392b'},
+   deco:set => { rowFill(set, 2, 6, 17, 'h'); rowFill(set, 3, 4, 19, 'h'); rowFill(set, 15, 7, 16, 'G'); rowFill(set, 22, 10, 13, 'X'); rowFill(set, 23, 9, 14, 'X'); for (let r = 24; r < 28; r++) { rowFill(set, r, 2, 6, 's'); rowFill(set, r, 17, 21, 's'); } },
+   intro:'Le barman ressert toujours ses propres verres ! Pendant son piège, si tu touches un de ses verres, il revient aussitôt sur la table.',
+   winLine:'La maison offre la défaite !', loseLine:'Bon… c\'est ma tournée.',
+   faille:'Sa faille : il ne peut ressortir qu\'un verre à la fois. Enchaîne les réussites pour le dépasser.'},
+  {id:'nounours', name:'NOUNOURS', short:'Nounours', sa:'note', col:'#c98a4b', noise:62, who:'bear', boss:true, arena:'karaoke',
+   intro:'Il a l\'air tout doux… mais c\'est la star du karaoké et le roi du pastis pong ! Quand il chante sa Fausse Note, un coup de vent dévie ta balle : vers le haut, le bas, la gauche ou la droite.',
+   faille:'Sa faille : il chante faux, mais pas souvent. Entre deux chansons, il lui faut du temps pour recharger son pastis.',
+   winLine:'Tu ferais mieux d\'aller au karaoké !', loseLine:'Bon… je vais rejoindre mes copains au karaoké. Tu viens chanter ?'}
+];
+function bust(p, mood) {
+  if (!p) return heroSpr(mood);
+  if (p.who === 'bottle') return bottleSpr(mood);
+  if (p.who === 'bear') return bearSpr(mood);
+  if (p.boss && p.boss.pal) return npcSpr(p.boss, mood);
+  return heroSpr(mood, p.tee);
+}
+
+/* ---------- coups spéciaux ---------- */
+const SUPERS = {
+  tete:{name:'LA TÊTE DE YOUKY', txt:'Youky colle sa grosse tête devant tes verres : ton adversaire vise à l\'aveugle.'},
+  glacon:{name:'LA BALLE GLAÇON', txt:'La balle d\'en face se change en glaçon : en touchant la table, elle glisse n\'importe où.'},
+  bouclier:{name:'LA SOUCOUPE SURPRISE', txt:'Si la balle d\'en face tombe dans un de tes verres, une soucoupe a de bonnes chances de surgir dessus.'},
+  guide:{name:'LA BALLE TÉLÉCOMMANDÉE', txt:'Pendant le vol de la balle d\'en face, pose le doigt sur l\'écran : elle part vers ton doigt.'},
+  remue:{name:'LE REMUE-MÉNAGE', txt:'En plein vol de la balle d\'en face, tes verres se mélangent sur la table.'},
+  bouteille:{name:'LA BOUTEILLE GÉANTE', txt:'En plein vol, une bouteille d\'eau surgit devant tes verres et peut bloquer la balle.'},
+  fantome:{name:'LE VERRE FANTÔME', txt:'Si ton adversaire touche un de tes verres, il revient aussitôt sur la table.'},
+  note:{name:'LA FAUSSE NOTE', txt:'Le coup de Nounours : une note de musique souffle un coup de vent (haut, bas, gauche ou droite) sur la balle d\'en face.'}
+};
+const SA_ORDER = ['tete', 'glacon', 'bouclier', 'guide', 'remue', 'bouteille', 'fantome', 'note'];
+function drawNote(g, x, y, sc, col) {
+  g.fillStyle = col; const P = (c, r, w, h) => g.fillRect(x + c * sc, y + r * sc, w * sc, h * sc);
+  P(5, 0, 1, 8); P(5, 0, 4, 1); P(8, 1, 1, 2); P(2, 7, 4, 3); P(1, 8, 1, 1);
+}
+function drawSuperIcon(g, k) {
+  g.clearRect(0, 0, 20, 20);
+  const P = (c, r, w, h, col) => { g.fillStyle = col; g.fillRect(c, r, w, h); };
+  if (k === 'tete') g.drawImage(heroSpr('grin'), 2, 0, 20, 21, 1, 0, 18, 19);
+  else if (k === 'glacon') { P(4, 4, 12, 12, '#86bde3'); P(5, 5, 10, 10, '#e6f6ff'); P(5, 5, 10, 2, '#fff'); P(0, 9, 3, 1, '#bfe9ff'); P(17, 9, 3, 1, '#bfe9ff'); P(9, 0, 1, 3, '#bfe9ff'); P(9, 17, 1, 3, '#bfe9ff'); }
+  else if (k === 'bouclier') { P(2, 7, 16, 6, '#f4ecd8'); P(3, 8, 14, 4, '#d8cdb5'); P(5, 13, 10, 5, '#d7ecf7'); P(6, 14, 8, 3, '#f2c23a'); }
+  else if (k === 'guide') { P(8, 13, 5, 5, '#ffffff'); P(9, 2, 2, 9, '#ffd23f'); P(6, 4, 2, 2, '#ffd23f'); P(12, 4, 2, 2, '#ffd23f'); }
+  else if (k === 'remue') { for (const [x, y] of [[2, 3], [12, 2], [6, 10], [14, 12], [3, 15]]) { P(x, y, 5, 5, '#d7ecf7'); P(x + 1, y + 1, 3, 3, '#f2c23a'); } }
+  else if (k === 'bouteille') g.drawImage(bottleSpr('grr'), 3, 0, 18, 28, 4, 0, 13, 20);
+  else if (k === 'fantome') { P(5, 3, 10, 14, 'rgba(215,236,247,.6)'); P(6, 5, 8, 7, 'rgba(242,194,58,.6)'); P(7, 8, 2, 2, '#13233a'); P(11, 8, 2, 2, '#13233a'); }
+  else if (k === 'note') { g.drawImage(bearSpr('grin'), 0, 0, 24, 28, 0, 6, 12, 14); drawNote(g, 9, 1, 1.2, '#ffd23f'); P(15, 13, 4, 1, '#bfe9ff'); P(13, 16, 6, 1, '#bfe9ff'); }
+}
+
+/* ---------- décor ---------- */
+const ARENAS = {
+  terrasse:{name:'La Terrasse', table:'#7a4a28'}, fete:{name:'La Fête du Village', table:'#5a3a5a'}, plage:{name:'La Plage', table:'#2f6fb5'},
+  bar:{name:'Le Bar de Jojo', table:'#3a2214'}, chambre:{name:'La Chambre de Nounours', table:'#8fb8d8'}, karaoke:{name:'Le Karaoké de Nounours', table:'#3a2a5a'}, bistrot:{name:'Le Bistrot', table:'#5a3a22'}
+};
+const bgCache = {};
+function bgImg(k) {
+  if (bgCache[k]) return bgCache[k];
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  let seed = k.length * 53 + 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  if (k === 'terrasse') { for (let y = 0; y < H; y += 20) for (let x = (y / 20) % 2 ? -10 : 0; x < W; x += 20) { g.fillStyle = ['#c8643a', '#b85a33', '#d0703f'][Math.floor(rnd() * 3)]; g.fillRect(x + 1, y + 1, 18, 18); } }
+  else if (k === 'fete') { g.fillStyle = '#1a1424'; g.fillRect(0, 0, W, H); for (let i = 0; i < 60; i++) { g.fillStyle = ['#ff4fa3', '#ffd23f', '#4cc06a', '#2f8fd6'][i % 4]; g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H), 3, 3); } }
+  else if (k === 'plage') { g.fillStyle = '#e8d4a0'; g.fillRect(0, 0, W, H); for (let i = 0; i < 1600; i++) { g.fillStyle = rnd() < 0.5 ? '#d8c08a' : '#f2e2b4'; g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H), 2, 2); } }
+  else if (k === 'bar') { g.fillStyle = '#2a1a10'; g.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 3) { g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.15)' : 'rgba(255,200,140,.03)'; g.fillRect(0, y, W, 2); } }
+  else if (k === 'karaoke') { g.fillStyle = '#140d22'; g.fillRect(0, 0, W, H); for (let i = 0; i < 90; i++) { g.fillStyle = ['#ff4fa3', '#ffd23f', '#4cc0e0', '#9b7bff'][i % 4]; g.globalAlpha = 0.25 + rnd() * 0.5; const x = Math.floor(rnd() * W), y = Math.floor(rnd() * H); g.fillRect(x, y, 3, 3); } g.globalAlpha = 1; for (let i = 0; i < 14; i++) drawNote(g, Math.floor(rnd() * (W - 12)), Math.floor(rnd() * (H - 12)), 1.3, 'rgba(255,210,63,.35)'); }
+  else if (k === 'chambre') { g.fillStyle = '#f2d6e0'; g.fillRect(0, 0, W, H); for (let y = 6; y < H; y += 26) for (let x = ((y / 26) % 2) * 13 + 6; x < W; x += 26) { g.fillStyle = '#ffe9a0'; g.fillRect(x, y, 3, 3); g.fillRect(x - 2, y + 1, 7, 1); g.fillRect(x + 1, y - 2, 1, 7); } }
+  else { g.fillStyle = '#4a2f1c'; g.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 3) { g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,.09)' : 'rgba(255,220,170,.035)'; g.fillRect(0, y, W, 2); } }
+  bgCache[k] = cv; return cv;
+}
+const tableCache = {};
+function tableImg(k) {
+  if (tableCache[k]) return tableCache[k];
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  const col = ARENAS[k].table;
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(TX0 + 6, TY0 + 8, TX1 - TX0, TY1 - TY0);
+  g.fillStyle = shade(col, -0.35); g.fillRect(TX0 - 4, TY0 - 4, TX1 - TX0 + 8, TY1 - TY0 + 8);
+  g.fillStyle = col; g.fillRect(TX0, TY0, TX1 - TX0, TY1 - TY0);
+  for (let y = TY0; y < TY1; y += 4) { g.fillStyle = 'rgba(255,255,255,.035)'; g.fillRect(TX0, y, TX1 - TX0, 1); }
+  g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(TX0, CY - 1, TX1 - TX0, 2);
+  g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2; g.strokeRect(TX0 + 4, TY0 + 4, TX1 - TX0 - 8, TY1 - TY0 - 8);
+  // le logo au milieu de la table
+  g.fillStyle = 'rgba(255,210,63,.18)'; g.beginPath(); g.arc(CX, CY, 34, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(255,210,63,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(CX, CY, 34, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = 'rgba(255,240,200,.75)'; g.font = '8px "Press Start 2P", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('PASTIS', CX, CY - 8); g.fillText('PONG', CX, CY + 8);
+  tableCache[k] = cv; return cv;
+}
+const cupCache = new Map();
+function cupSpr(col, kind) {
+  const key = col + kind; if (cupCache.has(key)) return cupCache.get(key);
+  const S = 32, c = 16, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const g = cv.getContext('2d');
+  const disc = (r, cl) => { g.fillStyle = cl; g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2); g.fill(); };
+  disc(16, col); disc(14, '#d7ecf7'); disc(12, kind === 'ghost' ? 'rgba(242,194,58,.45)' : '#e8b62a'); disc(8, kind === 'ghost' ? 'rgba(255,224,120,.4)' : '#f2c23a');
+  g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(9, 7, 5, 2); g.fillRect(8, 9, 2, 3);
+  g.fillStyle = '#f4fbff'; g.fillRect(17, 15, 5, 5); g.fillStyle = '#bfe2f7'; g.fillRect(21, 16, 1, 4);   // un glaçon
+  cupCache.set(key, cv); return cv;
+}
+
+/* ---------- état ---------- */
+const canvas = $('game'), ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+let mode = 'story', storySel = 0, nPlayers = 2, gage = false, arena = 'bistrot';
+let state = 'title', animTime = 0, teams = [], tcur = 0, cups = [], ball = null, ballsLeft = 2, hitsTurn = 0, armed = null, drag = null, aiShot = null;
+let va = 0, targetVa = 0, steer = 0, steering = false, parts = [], popups = [], banner = '', bannerT = 0, bannerCol = '#ffd23f', mood = 'smile', moodT = 0, shakeT = 0, hugT = 0, boss = null;
+let bottle = null, calinOn = [false, false], rerackDone = [{}, {}], shieldPick = false, trap = [null, null], blind = false, steerPt = null, storyPick = 'tete';
+
+function rackPositions(team, n) {
+  const rows = n >= 10 ? [4, 3, 2, 1] : n >= 6 ? [3, 2, 1] : n >= 3 ? [2, 1] : [1];
+  const pts = [], s = 2 * CR + 1, dy = 27;
+  rows.forEach((cnt, r) => { for (let i = 0; i < cnt; i++) { const x = CX + (i - (cnt - 1) / 2) * s, yA = 470 - r * dy; pts.push({x, y:team === 0 ? yA : 2 * CY - yA}); } });
+  // le surplus éventuel (verre fantôme) se range derrière
+  while (pts.length < n) pts.push({x:CX + (pts.length % 3 - 1) * s, y:team === 0 ? 490 - (pts.length % 2) * 4 : 2 * CY - 490});
+  return pts;
+}
+function newCups() {
+  cups = [];
+  for (const t of [0, 1]) rackPositions(t, 10).forEach(p => cups.push({x:p.x, y:p.y, team:t, alive:true, shield:0, fade:0}));
+}
+const aliveCups = t => cups.filter(c => c.alive && c.team === t);
+function makeTeams() {
+  const nm = i => ((($('pn' + i) || {}).value || '').trim());
+  if (mode === 'story') {
+    const b = BOSSES[storySel];
+    return [{players:[{name:nm(0) || 'Youky', col:PCOLS[0], who:'hero', tee:null}], gauge:0, next:0, avail:[storyPick], col:PCOLS[0]},
+            {players:[{name:b.short, col:b.col, who:b.who || 'npc', boss:b, ai:true}], gauge:0, next:0, avail:[b.sa], ai:true, col:b.col}];
+  }
+  const ps = Array.from({length:nPlayers}, (_, i) => ({name:nm(i) || (i ? 'Joueur ' + (i + 1) : 'Youky'), col:PCOLS[i], who:'hero', tee:TEES[i]}));
+  return [{players:ps.filter((_, i) => i % 2 === 0), gauge:0, next:0, avail:SA_ORDER.slice(), col:PCOLS[0]}, {players:ps.filter((_, i) => i % 2 === 1), gauge:0, next:0, avail:SA_ORDER.slice(), col:PCOLS[1]}];
+}
+const teamName = t => teams[t].players.map(p => p.name).join(' & ');
+const shooter = () => teams[tcur].players[teams[tcur].next % teams[tcur].players.length];
+function startGame() {
+  initAudio();
+  teams = makeTeams();
+  if (mode === 'multi') saveJSON('pong-names', [0, 1, 2, 3].map(i => (($('pn' + i) || {}).value || '').trim()).filter(Boolean));
+  boss = mode === 'story' ? BOSSES[storySel] : null;
+  arena = boss ? boss.arena : 'bistrot';
+  newCups(); ball = null; parts = []; popups = []; bottle = null; calinOn = [false, false]; rerackDone = [{}, {}]; trap = [null, null]; blind = false; steerPt = null;
+  tcur = 0; va = targetVa = 0;
+  $('overlay').hidden = true;
+  beginTurn(true);
+}
+function say(t, col, d = 1.6) { banner = t; bannerCol = col || '#ffd23f'; bannerT = d; }
+function setMood(m, t) { mood = m; moodT = t; }
+function beginTurn(fresh) {
+  if (fresh) { ballsLeft = 2; hitsTurn = 0; armed = null; teams[tcur].head = false; teams[tcur].fired = false; }
+  const tm = teams[tcur], p = shooter();
+  targetVa = tm.ai ? targetVa : (tcur === 1 && mode === 'multi' ? Math.PI : 0);
+  // la bouteille géante ne bloque que pendant le tour adverse qui suit
+  if (bottle && fresh && bottle.owner === tcur) bottle = null;
+  state = tm.ai ? 'ai' : 'aim'; drag = null;
+  syncSuper();
+  if (fresh) { say(tm.ai ? p.name.toUpperCase() + ' LANCE…' : 'À ' + p.name.toUpperCase() + ' · 2 BALLES', p.col, 1.4); SFX.turn(); }
+  checkTrapAim();
+  if (tm.ai) setTimeout(aiPlay, 900);
+}
+const tName = t => teams[t].ai ? shooter2(t).name.toUpperCase() : teamName(t).toUpperCase();
+const shooter2 = t => teams[t].players[teams[t].next % teams[t].players.length];
+function revealTrap(tr, txt) { SFX.trap(); say('PIÈGE DE ' + tName(tr.owner) + ' : ' + txt, teams[tr.owner].col, 2); }
+function checkTrapAim() {
+  const tr = trap[tcur];
+  if (tr && tr.k === 'tete' && 2 - ballsLeft >= tr.ball) { trap[tcur] = null; blind = true; revealTrap(tr, 'TÊTE DE YOUKY ! VISE À L\'AVEUGLE'); }
+}
+function syncSuper() {
+  const tm = teams[tcur], b = $('super');
+  const posed = tm && trap[1 - tcur] && trap[1 - tcur].owner === tcur;
+  const can = tm && !tm.ai && tm.gauge >= 1 && state === 'aim' && !posed;
+  b.disabled = !can;
+  if (mode === 'multi' && tm) { b.textContent = can ? '⚡ PASTIS LOUCHE : POSE UN PIÈGE !' : 'TON PASTIS SE PRÉPARE EN SECRET…'; return; }
+  b.textContent = posed && !tm.ai ? 'PIÈGE POSÉ POUR LE TOUR D\'EN FACE… CHUT !' : can ? '⚡ PASTIS LOUCHE : POSE UN PIÈGE !' : (tm && tm.ai ? shooter().name.toUpperCase() + ' JOUE…' : tm && tm.gauge >= 1 ? 'LE PASTIS EST LOUCHE !' : 'LE VERRE N\'EST PAS ENCORE LOUCHE… ' + Math.round((tm ? tm.gauge : 0) * 100) + ' %');
+}
+
+/* ---------- la balle ---------- */
+const distFor = pow => 120 + pow * 430;
+function throwBall(L, special) {
+  const o = ORIGIN[tcur], d = Math.hypot(L.x - o.x, L.y - o.y);
+  ball = {sx:o.x, sy:o.y, tx:L.x, ty:L.y, t:0, dur:0.55 + d / 1100, h:Math.min(150, 50 + d * 0.22), x:o.x, y:o.y, z:0, team:tcur, special:null, bounced:false, rimmed:false, d, phase:'fly', trap:null, tr:null, fired:false};
+  blind = false; steerPt = null;
+  const tr = trap[tcur];
+  if (tr && tr.k !== 'tete' && 2 - ballsLeft >= tr.ball) { trap[tcur] = null; ball.trap = tr.k; ball.tr = tr; }
+  state = 'flying'; drag = null; ballsLeft--;
+  SFX.throw(); syncSuper();
+}
+function hop(nx, ny, h, dur) { const b = ball; b.sx = b.x; b.sy = b.y; b.tx = nx; b.ty = ny; b.t = 0; b.h = h; b.dur = dur; }
+function updateBall(dt) {
+  const b = ball; if (!b || b.phase === 'done') return;
+  b.t += dt; const k = Math.min(1, b.t / b.dur);
+  if (b.trap && b.phase === 'fly') {
+    const tr = b.tr, own = teams[tr.owner];
+    if (b.trap === 'note' && k > 0.25) {
+      if (!b.fired) { b.fired = true; const dirs = [[0, -1, 'HAUT'], [0, 1, 'BAS'], [-1, 0, 'GAUCHE'], [1, 0, 'DROITE']], d0 = dirs[ri(4)]; b.wind = {x:d0[0], y:d0[1], f:rand(38, 62)}; SFX.note(); SFX.wind(); revealTrap(tr, 'LA FAUSSE NOTE ! COUP DE VENT !'); }
+      b.tx += b.wind.x * b.wind.f * dt / (b.dur * 0.75); b.ty += b.wind.y * b.wind.f * dt / (b.dur * 0.75);
+      if (Math.random() < dt * 30) parts.push({x:b.x + rand(-40, 40), y:b.y + rand(-40, 40), vx:b.wind.x * 220, vy:b.wind.y * 220, life:0.4, col:'rgba(220,240,255,.8)'});
+    }
+    if (b.trap === 'guide' && k > 0.12) {
+      if (!b.fired) { b.fired = true; revealTrap(tr, 'BALLE TÉLÉCOMMANDÉE !'); if (own.ai) { const a = Math.atan2(b.ty - b.sy, b.tx - b.sx) + (Math.random() < 0.5 ? 1 : -1) * Math.PI / 2; b.aiSteer = {x:Math.cos(a), y:Math.sin(a)}; } }
+      let v = null;
+      if (own.ai) v = b.aiSteer;
+      else if (steerPt) { const dx = steerPt.x - b.tx, dy = steerPt.y - b.ty, l = Math.hypot(dx, dy); if (l > 4) v = {x:dx / l, y:dy / l}; }
+      if (v) { b.tx += v.x * 150 * dt; b.ty += v.y * 150 * dt; }
+    }
+    if (b.trap === 'bouteille' && k > 0.3 && !b.fired) { b.fired = true; bottle = {owner:tr.owner, x:CX, y:tr.owner === 0 ? 362 : 2 * CY - 362, t:0}; SFX.block(); revealTrap(tr, 'LA BOUTEILLE GÉANTE SURGIT !'); }
+    if (b.trap === 'remue' && k > 0.4 && !b.fired) { b.fired = true; shuffleCups(tr.owner); revealTrap(tr, 'REMUE-MÉNAGE ! LES VERRES BOUGENT'); }
+  }
+  b.x = b.sx + (b.tx - b.sx) * k; b.y = b.sy + (b.ty - b.sy) * k; b.z = Math.sin(k * Math.PI) * b.h;
+  // la bouteille géante
+  if (bottle && bottle.owner !== b.team && b.z < 60 && Math.hypot(b.x - bottle.x, b.y - bottle.y) < 20 + BR) {
+    b.phase = 'done'; SFX.block(); say('BLOQUÉE PAR LA BOUTEILLE GÉANTE !', '#2f8fd6', 1.6);
+    for (let i = 0; i < 8; i++) parts.push({x:b.x, y:b.y, vx:rand(-60, 60), vy:rand(-60, 60), life:0.4, col:'#bfe6ff'});
+    return finishBall(false);
+  }
+  if (k >= 1) landing();
+}
+function shuffleCups(team) {
+  SFX.shake(); shakeT = 0.5;
+  const live = aliveCups(team), placed = [];
+  live.forEach(c => {
+    for (let i = 0; i < 60; i++) {
+      const x = rand(TX0 + 22, TX1 - 22), yA = rand(370, 480), y = team === 0 ? yA : 2 * CY - yA;
+      if (placed.every(p => Math.hypot(p.x - x, p.y - y) > 2 * CR + 3)) { placed.push({x, y}); c.mv = {sx:c.x, sy:c.y, tx:x, ty:y, t:0}; break; }
+    }
+  });
+  rerackDone[team] = {6:true, 3:true, ...rerackDone[team]};
+}
+function landing() {
+  const b = ball, tgt = 1 - b.team;
+  const list = cups.filter(c => c.alive && c.team === tgt);
+  let near = null, nd = Infinity;
+  list.forEach(c => { const d = Math.hypot(c.x - b.x, c.y - b.y); if (d < nd) { nd = d; near = c; } });
+  const onTable = b.x > TX0 && b.x < TX1 && b.y > TY0 && b.y < TY1;
+  if (b.trap === 'glacon' && !b.fired && onTable) { b.fired = true; revealTrap(b.tr, 'BALLE GLAÇON : ÇA GLISSE !'); for (let i = 0; i < 10; i++) parts.push({x:b.x, y:b.y, vx:rand(-90, 90), vy:rand(-90, 90), life:0.4, col:'#d7ecf7'}); hop(b.x + rand(-34, 34), b.y + rand(-34, 34), 5, 0.3); return; }
+  if (near && nd < CR - 3) {
+    if (b.trap === 'bouclier' && !b.fired && near.shield <= 0) { b.fired = true; if (Math.random() < 0.6) { near.shield = 1; revealTrap(b.tr, 'SOUCOUPE SURPRISE !'); } else popups.push({t:'LA SOUCOUPE ARRIVE TROP TARD !', x:W / 2, y:300, col:'#f4ecd8', life:1.3}); }
+    if (near.shield > 0) { SFX.block(); popups.push({t:'BOUCLIER !', x:near.x, y:near.y - 18, col:'#f4ecd8', life:1, board:true}); const a = rand(0, Math.PI * 2); hop(b.x + Math.cos(a) * 34, b.y + Math.sin(a) * 34, 22, 0.35); b.bounced = true; b.rimmed = true; return; }
+    return sink(near);
+  }
+  if (near && nd < CR + 4 && !b.rimmed) {
+    b.rimmed = true; SFX.rim(); popups.push({t:'IL TOURNE… IL TOURNE…', x:near.x, y:near.y - 20, col:'#ffd23f', life:1, board:true});
+    if (Math.random() < 0.5) { b.phase = 'rim'; b.rimCup = near; b.t = 0; return; }
+    const a = Math.atan2(b.y - near.y, b.x - near.x) + rand(-0.8, 0.8); hop(b.x + Math.cos(a) * 26, b.y + Math.sin(a) * 26, 16, 0.3); return;
+  }
+  if (onTable && !b.bounced) {
+    b.bounced = true; SFX.pok();
+    const ux = (b.tx - b.sx) / (Math.hypot(b.tx - b.sx, b.ty - b.sy) || 1), uy = (b.ty - b.sy) / (Math.hypot(b.tx - b.sx, b.ty - b.sy) || 1);
+    hop(b.x + ux * b.d * 0.28, b.y + uy * b.d * 0.28, 34, 0.42); return;
+  }
+  if (onTable) SFX.pok();
+  b.phase = 'done'; SFX.miss();
+  popups.push({t:'RATÉ !', x:clamp(b.x, 50, W - 50), y:clamp(b.y, 90, 480), col:'#9d948b', life:0.9, board:true});
+  finishBall(false);
+}
+function sink(c) {
+  const b = ball; b.phase = 'done'; b.x = c.x; b.y = c.y; b.z = 0;
+  SFX.plouf(); for (let i = 0; i < 12; i++) parts.push({x:c.x, y:c.y, vx:rand(-90, 90), vy:rand(-90, 90), life:0.5, col:i % 2 ? '#ffd23f' : '#f3ead0'});
+  const removed = [c];
+  const neigh = n => cups.filter(o => o.alive && o.team === c.team && !removed.includes(o)).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y)).slice(0, n).filter(o => o.shield <= 0);
+  let msg = b.bounced ? 'REBOND GAGNANT : 2 VERRES !' : 'PLOUF ! DANS LE VERRE !';
+  if (b.bounced) removed.push(...neigh(1));
+  if (c.head) { removed.push(...neigh(1)); msg = 'LA TÊTE DE YOUKY : 2 VERRES !'; }
+  if (b.special === 'glacon') { removed.push(...cups.filter(o => o.alive && o.team === c.team && !removed.includes(o) && o.shield <= 0 && Math.hypot(o.x - c.x, o.y - c.y) < 34)); msg = 'BALLE GLAÇON : ' + removed.length + ' VERRES ÉCLATENT !'; for (let i = 0; i < 16; i++) parts.push({x:c.x, y:c.y, vx:rand(-140, 140), vy:rand(-140, 140), life:0.6, col:'#d7ecf7'}); }
+  removed.forEach(o => { o.alive = false; o.fade = 0.5; o.head = false; });
+  if (b.trap === 'fantome' && !b.fired) { b.fired = true; const g = removed[0]; g.alive = true; g.fade = 0; g.ghostT = 1.2; SFX.ghost(); revealTrap(b.tr, 'LE VERRE FANTÔME REVIENT !'); removed.shift(); msg = removed.length ? 'TOUCHÉ… MAIS LE VERRE REVIENT !' : 'TOUCHÉ… MAIS LE VERRE REVIENT !'; }
+  if (!(b.trap === 'fantome' && b.fired)) say(msg, teams[b.team].col, 1.6); setMood('grin', 2);
+  addGauge(b.team, 0.3 + (removed.length > 1 ? 0.15 : 0));
+  finishBall(true);
+}
+function finishBall(hit) {
+  const t = ball.team;
+  if (hit) hitsTurn++;
+  if (ball.trap && ball.fired && ball.trap !== 'fantome') setTimeout(() => popups.push({t:hit ? 'RATÉ, LE PIÈGE ! ÇA RENTRE QUAND MÊME' : 'LE PIÈGE A MARCHÉ !', x:W / 2, y:140, col:hit ? '#9fd8ff' : '#ffd23f', life:1.6}), 300);
+  if (ball.trap === 'bouteille') setTimeout(() => { bottle = null; }, 600);
+  setTimeout(() => {
+    if (state !== 'flying') return;
+    ball = null;
+    const opp = 1 - t;
+    if (!aliveCups(opp).length) return endGame(t);
+    // re-rack automatique à 6 et à 3 verres
+    const n = aliveCups(opp).length;
+    if ((n === 6 || n === 3) && !rerackDone[opp][n]) { rerackDone[opp][n] = true; rerack(opp); }
+    if (ballsLeft > 0) { state = teams[tcur].ai ? 'ai' : 'aim'; checkTrapAim(); syncSuper(); if (teams[tcur].ai) setTimeout(aiPlay, 700); return; }
+    if (hitsTurn >= 2 && !teams[tcur].fired) { teams[tcur].fired = true; SFX.fire(); say('BALLES EN FEU : ON REJOUE !', '#ff4fa3', 1.8); addGauge(t, 0.2); ballsLeft = 2; hitsTurn = 0; setTimeout(() => beginTurn(false), 600); return; }
+    teams[tcur].next++; teams[tcur].head = false; cups.forEach(c => { c.head = false; });
+    cups.forEach(c => { if (c.team === tcur && c.shield > 0) c.shield--; });
+    tcur = 1 - tcur;
+    setTimeout(() => beginTurn(true), 500);
+  }, hit ? 700 : 500);
+}
+function rerack(team) {
+  const live = aliveCups(team), pos = rackPositions(team, live.length);
+  live.forEach((c, i) => { c.mv = {sx:c.x, sy:c.y, tx:pos[i].x, ty:pos[i].y, t:0}; });
+  SFX.rerack(); popups.push({t:'ON RESSERRE LES VERRES !', x:W / 2, y:team === 0 ? 380 : 190, col:'#f4ecd8', life:1.4, board:true});
+}
+function addGauge(t, gain) {
+  const tm = teams[t], was = tm.gauge; tm.gauge = Math.min(1, tm.gauge + gain);
+  if (was < 1 && tm.gauge >= 1 && mode !== 'multi') { SFX.louche(); setTimeout(() => say(tm.ai ? shooter2(t).name.toUpperCase() + ' A UN PASTIS LOUCHE…' : teamName(t).toUpperCase() + ' : LE PASTIS EST LOUCHE !', '#f3ead0', 1.8), 900); }
+}
+
+/* ---------- coups spéciaux ---------- */
+function useSpecial(k, t) {
+  const opp = 1 - t;
+  if (k === 'tete') { teams[t].head = true; const live = aliveCups(opp); const c = live.reduce((a, o) => Math.hypot(o.x - CX, o.y - CY) < Math.hypot(a.x - CX, a.y - CY) ? o : a, live[0]); if (c) c.head = true; return; }
+  if (k === 'remue') {
+    SFX.shake(); shakeT = 0.7; say('REMUE-MÉNAGE !', '#e8453c', 1.4);
+    const live = aliveCups(opp), placed = [];
+    live.forEach(c => {
+      for (let i = 0; i < 60; i++) {
+        const x = rand(TX0 + 22, TX1 - 22), yA = rand(370, 480), y = opp === 0 ? yA : 2 * CY - yA;
+        if (placed.every(p => Math.hypot(p.x - x, p.y - y) > 2 * CR + 3)) { placed.push({x, y}); c.mv = {sx:c.x, sy:c.y, tx:x, ty:y, t:0}; break; }
+      }
+    });
+    rerackDone[opp] = {6:true, 3:true, ...rerackDone[opp]};
+    return;
+  }
+  if (k === 'bouteille') { bottle = {owner:t, x:CX, y:t === 0 ? 362 : 2 * CY - 362, t:0}; SFX.block(); say('LA BOUTEILLE GÉANTE SE PLANTE DEVANT LES VERRES !', '#2f8fd6', 1.8); return; }
+  if (k === 'fantome') {
+    const lost = cups.filter(c => !c.alive && c.team === t);
+    if (!lost.length) { popups.push({t:'AUCUN VERRE À RAMENER…', x:W / 2, y:300, col:'#9d948b', life:1.2}); return; }
+    const c = lost[lost.length - 1], live = aliveCups(t), pos = rackPositions(t, live.length + 1);
+    const free = pos.find(p => live.every(o => Math.hypot(o.x - p.x, o.y - p.y) > 2 * CR)) || pos[pos.length - 1];
+    c.alive = true; c.fade = 0; c.x = free.x; c.y = free.y; c.ghostT = 1.2; SFX.ghost(); say('LE VERRE FANTÔME REVIENT !', '#d7ecf7', 1.6); return;
+  }
+  if (k === 'calin') { calinOn[opp] = true; SFX.hug(); hugT = 1.2; say('NOUNOURS OUVRE GRAND LES BRAS…', '#c98a4b', 1.8); return; }
+  if (k === 'bouclier') {
+    const live = aliveCups(t).filter(c => c.shield <= 0);
+    if (teams[t].ai) { const c = live.reduce((a, o) => Math.hypot(o.x - CX, o.y - CY) < Math.hypot(a.x - CX, a.y - CY) ? o : a, live[0]); if (c) { c.shield = 2; SFX.block(); } return; }
+    shieldPick = true; state = 'shield'; say('TOUCHE UN DE TES VERRES À PROTÉGER', '#f4ecd8', 1.8); return;
+  }
+  if (k === 'glacon' || k === 'guide') { armed = k; }
+}
+
+/* ---------- les boss (IA) ---------- */
+function aiPlay() {
+  if (state !== 'ai' || ball) return;
+  const tm = teams[tcur], p = shooter(), b = p.boss, opp = 1 - tcur;
+  const special = null;
+  if (tm.gauge >= 1 && !trap[opp]) {
+    tm.gauge = 0; SFX.super(); trap[opp] = {k:b.sa, owner:tcur, ball:ri(2)};
+    say(p.name.toUpperCase() + ' A LE PASTIS LOUCHE… MÉFIE-TOI !', b.col, 1.8);
+  }
+  const live = aliveCups(opp).filter(c => c.shield <= 0);
+  const pool = live.length ? live : aliveCups(opp);
+  let c = b.id === 'ginette' ? pool.reduce((a, o) => Math.hypot(o.x - CX, o.y - CY) < Math.hypot(a.x - CX, a.y - CY) ? o : a, pool[0]) : pool[ri(pool.length)];
+  if (bottle && bottle.owner === opp) { const side = pool.filter(o => Math.abs(o.x - CX) > 20); if (side.length) c = side[ri(side.length)]; }
+  let nz = b.noise * (blind ? 1.8 : 1);
+  if (b.id === 'dede' && Math.random() < 0.3) nz *= 1.8;
+  aiShot = {L:{x:c.x + gauss() * nz, y:c.y + gauss() * nz}, special, t:0};
+  state = 'ai-aim';
+}
+
+/* ---------- boucle ---------- */
+function update(dt) {
+  animTime += dt;
+  parts.forEach(p => { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; }); parts = parts.filter(p => p.life > 0);
+  popups.forEach(p => { p.life -= dt; p.y -= 16 * dt; }); popups = popups.filter(p => p.life > 0);
+  if (bannerT > 0) bannerT -= dt;
+  if (moodT > 0) { moodT -= dt; if (moodT <= 0) mood = 'smile'; }
+  if (shakeT > 0) shakeT -= dt;
+  if (hugT > 0) hugT -= dt;
+  let dv = targetVa - va; while (dv > Math.PI) dv -= Math.PI * 2; while (dv < -Math.PI) dv += Math.PI * 2;
+  va += dv * Math.min(1, dt * 6); if (Math.abs(dv) < 0.003) va = targetVa;
+  cups.forEach(c => { if (c.fade > 0) c.fade -= dt; if (c.ghostT > 0) c.ghostT -= dt; if (c.mv) { c.mv.t += dt; const k = Math.min(1, c.mv.t / 0.6); c.x = c.mv.sx + (c.mv.tx - c.mv.sx) * k; c.y = c.mv.sy + (c.mv.ty - c.mv.sy) * k; if (k >= 1) c.mv = null; } });
+  if (state === 'ai-aim' && aiShot) { aiShot.t += dt; if (aiShot.t > 1.1) { const a = aiShot; aiShot = null; throwBall(a.L, a.special); } }
+  if (ball) {
+    if (ball.phase === 'rim') { ball.t += dt; const c = ball.rimCup, a = ball.t * 14; ball.x = c.x + Math.cos(a) * (CR - 2); ball.y = c.y + Math.sin(a) * (CR - 2); ball.z = 4; if (ball.t > 0.9) { if (c.alive && c.shield <= 0) sink(c); else { ball.phase = 'done'; finishBall(false); } } }
+    else updateBall(dt);
+  }
+}
+
+/* ---------- rendu ---------- */
+function text(t, x, y, col, font = FONT, align = 'center', maxW) {
+  ctx.font = font; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(13,11,10,.85)';
+  maxW ? ctx.strokeText(t, x, y, maxW) : ctx.strokeText(t, x, y); ctx.fillStyle = col; maxW ? ctx.fillText(t, x, y, maxW) : ctx.fillText(t, x, y);
+}
+function aimParams() {
+  const dx = drag.sx - drag.x, dy = drag.sy - drag.y, len = Math.hypot(dx, dy);
+  let a = Math.atan2(dy, dx); if (dy >= -2) a = dx >= 0 ? -0.25 : -Math.PI + 0.25; a = clamp(a, -Math.PI + 0.25, -0.25);
+  const pow = clamp((len - 12) / 200, 0.02, 1), d = rot(va, Math.cos(a), Math.sin(a)), o = ORIGIN[tcur], dist = distFor(pow);
+  return {pow, ux:d.x, uy:d.y, L:{x:o.x + d.x * dist, y:o.y + d.y * dist}};
+}
+function render() {
+  ctx.drawImage(bgImg(arena), 0, 0);
+  ctx.save();
+  ctx.translate(CX + (shakeT > 0 ? rand(-4, 4) : 0), CY + (shakeT > 0 ? rand(-4, 4) : 0)); ctx.rotate(-va); ctx.translate(-CX, -CY);
+  ctx.drawImage(tableImg(arena), 0, 0);
+  // verres
+  for (const c of cups) {
+    if (!c.alive && !(c.fade > 0)) continue;
+    ctx.save();
+    if (!c.alive) { ctx.globalAlpha = c.fade * 2; }
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(c.x + 2, c.y + 3, CR, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(cupSpr(teams[c.team] ? teams[c.team].col : '#888', c.ghostT > 0 ? 'ghost' : ''), c.x - 16, c.y - 16, 32, 32);
+    if (c.head) { ctx.save(); ctx.beginPath(); ctx.arc(c.x, c.y, 12, 0, Math.PI * 2); ctx.clip(); ctx.translate(c.x, c.y); ctx.rotate(va); ctx.drawImage(heroSpr('grin'), 2, 0, 20, 21, -12, -12, 24, 24); ctx.restore(); }
+    if (c.shield > 0) { ctx.fillStyle = 'rgba(244,236,216,.92)'; ctx.beginPath(); ctx.arc(c.x, c.y, CR + 1, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#b9a888'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y, CR - 4, 0, Math.PI * 2); ctx.stroke(); }
+    if (state === 'shield' && c.team === tcur && c.alive) { ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(c.x, c.y, CR + 4 + Math.sin(animTime * 6), 0, Math.PI * 2); ctx.stroke(); }
+    ctx.restore();
+  }
+  // bouteille géante
+  if (bottle) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(bottle.x + 6, bottle.y + 8, 20, 0, Math.PI * 2); ctx.fill(); ctx.save(); ctx.translate(bottle.x, bottle.y); ctx.rotate(va); ctx.drawImage(bottleSpr('grr'), -20, -26, 40, 47); ctx.restore(); }
+  // visée
+  const tm = teams[tcur];
+  if (state === 'aim' && drag && drag.len > 12 && !blind) {
+    const a = aimParams(), o = ORIGIN[tcur];
+    for (let k = 0.05; k < 0.5; k += 0.05) { const x = o.x + (a.L.x - o.x) * k, y = o.y + (a.L.y - o.y) * k, z = Math.sin(k * Math.PI) * Math.min(150, 50 + distFor(a.pow) * 0.22); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 1, y + 1, 3, 3); const s = rot(va, 0, -z * 0.35); ctx.fillStyle = '#ffffff'; ctx.fillRect(x + s.x - 1.5, y + s.y - 1.5, 3, 3); }
+    // zone d'arrivée approximative (elle tremble : à toi de doser)
+    const wob = 9 + Math.sin(animTime * 5) * 3, wx = Math.sin(animTime * 3.1) * 6, wy = Math.cos(animTime * 2.3) * 6;
+    ctx.strokeStyle = 'rgba(255,210,63,.75)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(a.L.x + wx, a.L.y + wy, wob + 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if (state === 'ai-aim' && aiShot && aiShot.t > 0.5) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(aiShot.L.x, aiShot.L.y, 20, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+  // la tête de Youky cache les verres
+  if (blind && (state === 'aim' || state === 'ai' || state === 'ai-aim')) {
+    const live = aliveCups(1 - tcur); if (live.length) { const mx = live.reduce((a, c) => a + c.x, 0) / live.length, my = live.reduce((a, c) => a + c.y, 0) / live.length;
+      ctx.save(); ctx.translate(mx + Math.sin(animTime * 2.3) * 14, my + Math.cos(animTime * 1.7) * 10); ctx.rotate(va); ctx.globalAlpha = 0.96; ctx.drawImage(heroSpr('grin'), -66, -77, 132, 154); ctx.restore(); }
+  }
+  // la fausse note : flèche du vent
+  if (ball && ball.wind && ball.phase === 'fly') {
+    const w = ball.wind; ctx.save(); ctx.translate(ball.x - w.x * 60 + (w.y ? 46 : 0), ball.y - w.y * 60 + (w.x ? 46 : 0)); ctx.globalAlpha = 0.85; ctx.scale(0.8, 0.8);
+    ctx.fillStyle = '#bfe9ff'; ctx.rotate(Math.atan2(w.y, w.x)); ctx.fillRect(-40, -4, 60, 8); ctx.beginPath(); ctx.moveTo(20, -14); ctx.lineTo(44, 0); ctx.lineTo(20, 14); ctx.fill(); ctx.restore();
+    drawNote(ctx, ball.x - 30 + Math.sin(animTime * 8) * 6, ball.y - 40, 2.4, '#ffd23f');
+  }
+  // balle
+  if (ball && ball.phase !== 'done') {
+    const b = ball, s = rot(va, 0, -b.z * 0.35), r = BR * (1 + b.z / 120);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(b.x, b.y, BR, BR * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    if (b.trap === 'glacon' && b.fired) { ctx.fillStyle = '#86bde3'; ctx.fillRect(b.x + s.x - r - 1, b.y + s.y - r - 1, r * 2 + 2, r * 2 + 2); ctx.fillStyle = '#e6f6ff'; ctx.fillRect(b.x + s.x - r, b.y + s.y - r, r * 2, r * 2); }
+    else { ctx.fillStyle = '#f27a1a'; ctx.beginPath(); ctx.arc(b.x + s.x, b.y + s.y, r + 1, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fbf6ee'; ctx.beginPath(); ctx.arc(b.x + s.x, b.y + s.y, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(b.x + s.x - r / 2, b.y + s.y - r / 2, 2, 2); }
+    if (b.trap === 'guide' && b.fired) { ctx.strokeStyle = 'rgba(255,210,63,.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(b.x + s.x, b.y + s.y, r + 4, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  parts.forEach(q => { ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x), Math.round(q.y), 2, 2); });
+  popups.filter(q => q.board).forEach(q => { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(va); text(q.t, 0, 0, q.col, SMALL); ctx.restore(); });
+  ctx.restore();
+
+  // ---- HUD du haut ----
+  ctx.fillStyle = 'rgba(13,11,10,.86)'; ctx.fillRect(0, 0, W, 50);
+  if (teams.length && state !== 'title') {
+    teams.forEach((tm2, i) => {
+      const x = i * W / 2, cw = W / 2, p = tm2.players[tm2.next % tm2.players.length];
+      if (i === tcur) { ctx.fillStyle = tm2.col; ctx.globalAlpha = 0.25; ctx.fillRect(x, 0, cw, 50); ctx.globalAlpha = 1; ctx.fillRect(x, 47, cw, 3); }
+      ctx.drawImage(bust(p, i === tcur ? mood : 'smile'), x + 4, 6, 26, 30);
+      text(teamName(i).toUpperCase(), x + 34, 12, tm2.col, SMALL, 'left', cw - 40);
+      const n = aliveCups(i).length;
+      ctx.drawImage(cupSpr(tm2.col, ''), x + 34, 21, 14, 14); text('× ' + n, x + 52, 29, '#f1ebe4', MID, 'left');
+      if (mode !== 'multi') { ctx.fillStyle = '#2a2420'; ctx.fillRect(x + 4, 40, cw - 10, 4); } ctx.fillStyle = mode === 'multi' ? 'rgba(0,0,0,0)' : tm2.gauge >= 1 ? '#f3ead0' : '#9fd8ff'; ctx.fillRect(x + 4, 40, Math.round((cw - 10) * tm2.gauge), 4);
+    });
+    text(ARENAS[arena].name.toUpperCase() + ' · BALLE ' + Math.min(2, Math.max(1, 3 - ballsLeft - (ball ? 1 : 0))) + '/2', W / 2, 57, '#c9a26b', SMALL, 'center', W - 10);
+  }
+  // ---- bas ----
+  if (teams.length && state !== 'title') {
+    const p = shooter();
+    ctx.drawImage(bust(p, mood), 6, 516, 44, 51);
+    text(p.name.toUpperCase(), 28, 574, p.col, SMALL, 'center', 56);
+    if (mode === 'multi') drawSecretGlass(W - 46, 514); else drawGlass(W - 46, 514, tm.gauge);
+    for (let i = 0; i < 2; i++) { ctx.fillStyle = i < ballsLeft ? '#fbf6ee' : '#3a302a'; ctx.beginPath(); ctx.arc(160 + i * 18, 586, 5, 0, Math.PI * 2); ctx.fill(); }
+    if (state === 'aim' && !drag) text(blind ? 'TÊTE DE YOUKY : VISE À L\'AVEUGLE !' : 'POSE LE DOIGT, TIRE EN ARRIÈRE, RELÂCHE', W / 2, 532, blind ? '#f3ead0' : '#f4ecd8', SMALL, 'center', 240);
+    if (state === 'aim' && drag && drag.len > 12) { const a = aimParams(); text('PUISSANCE', W / 2, 524, '#f4ecd8', SMALL); ctx.fillStyle = '#2a2420'; ctx.fillRect(W / 2 - 60, 532, 120, 10); ctx.fillStyle = a.pow > 0.85 ? '#e8453c' : '#ffd23f'; ctx.fillRect(W / 2 - 58, 534, Math.round(116 * a.pow), 6); }
+    if (state === 'shield') text('TOUCHE UN DE TES VERRES À PROTÉGER', W / 2, 532, '#f4ecd8', SMALL, 'center', 240);
+    if (state === 'flying' && ball && ball.trap === 'guide' && ball.fired && !teams[ball.tr.owner].ai) text(teamName(ball.tr.owner).toUpperCase() + ' : TOUCHE L\'ÉCRAN, LA BALLE VA VERS TON DOIGT !', W / 2, 540, '#9fd8ff', SMALL, 'center', 300);
+    if (state === 'ai' || state === 'ai-aim') text(p.name.toUpperCase() + ' VISE…', W / 2, 532, p.col, SMALL, 'center', 240);
+  }
+  popups.filter(q => !q.board).forEach(q => text(q.t, q.x, q.y, q.col, FONT, 'center', W - 16));
+  if (bannerT > 0 && banner) { ctx.fillStyle = 'rgba(13,11,10,.8)'; ctx.fillRect(8, CY - 15, W - 16, 30); text(banner, W / 2, CY, bannerCol, banner.length > 22 ? FONT : MID, 'center', W - 28); }
+}
+function drawSecretGlass(x, y) {
+  const w = 30, h = 44;
+  ctx.fillStyle = 'rgba(225,242,252,.25)'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(225,242,252,.9)'; ctx.fillRect(x, y, 2, h); ctx.fillRect(x + w - 2, y, 2, h); ctx.fillRect(x, y + h - 2, w, 2);
+  ctx.fillStyle = '#f4ecd8'; ctx.fillRect(x - 3, y + 6, w + 6, h - 6); ctx.fillStyle = '#c0392b'; for (let i = 0; i < 4; i++) ctx.fillRect(x - 3, y + 10 + i * 9, w + 6, 2);
+  text('?', x + w / 2, y + h / 2 + 3, '#2a201a', MID);
+  text('SECRET', x + w / 2, y + h + 8, '#9fd8ff', SMALL);
+}
+function drawGlass(x, y, gauge) {
+  const w = 30, h = 44, louche = gauge >= 1, fill = 0.35 + gauge * 0.6;
+  const a = [217, 162, 27], b = [239, 227, 168], liq = louche ? '#f3ead0' : 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * gauge)).join(',') + ')';
+  ctx.fillStyle = 'rgba(225,242,252,.25)'; ctx.fillRect(x, y, w, h);
+  const lh = Math.round((h - 4) * fill); ctx.fillStyle = liq; ctx.fillRect(x + 3, y + h - 2 - lh, w - 6, lh);
+  if (louche) for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x + 6 + ((i * 7 + animTime * 20) % (w - 12)), y + h - 6 - ((i * 11 + animTime * 30) % lh), 2, 2); }
+  ctx.fillStyle = 'rgba(225,242,252,.9)'; ctx.fillRect(x, y, 2, h); ctx.fillRect(x + w - 2, y, 2, h); ctx.fillRect(x, y + h - 2, w, 2);
+  ctx.fillStyle = '#e8453c'; ctx.fillRect(x + w - 9, y - 7, 2, 26);
+  text(louche ? 'LOUCHE' : Math.round(gauge * 100) + '%', x + w / 2, y + h + 8, louche ? '#f3ead0' : '#9fd8ff', SMALL);
+}
+let last = performance.now(), acc = 0;
+function frame(now) { acc += Math.min(0.1, (now - last) / 1000); last = now; while (acc >= STEP) { update(STEP); acc -= STEP; } render(); requestAnimationFrame(frame); }
+
+/* ---------- fin de partie ---------- */
+async function endGame(wt) {
+  state = 'over';
+  await new Promise(r => setTimeout(r, 900));
+  const wteam = teams[wt], w = wteam.players[0];
+  if (mode === 'story') {
+    const win = wt === 0;
+    let title, text, btns;
+    if (win) {
+      SFX.win();
+      const prog = loadJSON('pong-story', 0); if (storySel + 1 > prog) saveJSON('pong-story', storySel + 1);
+      if (boss.boss) { title = 'NOUNOURS EST VAINCU !'; text = '« ' + boss.loseLine + ' »\n\nNounours range son micro… Youky est le roi du Pastis Pong ! La Fausse Note est à toi. Santé !'; btns = [{label:'MENU', value:0}]; }
+      else { title = boss.short.toUpperCase() + (boss.id === 'ginette' || boss.id === 'bouteille' ? ' EST BATTUE !' : ' EST BATTU !'); text = '« ' + boss.loseLine + ' »\n\nTu gagnes son coup spécial : ' + SUPERS[boss.sa].name + '.\n' + SUPERS[boss.sa].txt; btns = [{label:'ADVERSAIRE SUIVANT', value:2}, {label:'MENU', value:0, cls:'alt'}]; }
+    } else { SFX.lose(); title = boss.short.toUpperCase() + ' GAGNE…'; text = '« ' + boss.winLine + ' »\n\n' + boss.faille; btns = [{label:'REVANCHE', value:1}, {label:'MENU', value:0, cls:'alt'}]; }
+    const r = await card(title, text + '\n\nVerres restants : ' + teamName(0) + ' ' + aliveCups(0).length + ' · ' + teamName(1) + ' ' + aliveCups(1).length, btns, {who:win ? teams[0].players[0] : teams[1].players[0], mood:win ? 'grin' : 'grr', col:win ? '#7fcf5a' : boss.col});
+    if (r === 2) { storySel = Math.min(4, storySel + 1); return storyIntro(); }
+    if (r === 1) return storyIntro();
+    return showMenu();
+  }
+  SFX.win();
+  const lt = teams[1 - wt];
+  const board = loadJSON('pong-board', {});
+  teams.forEach((tm, i) => tm.players.forEach(q => { const e = board[q.name] || {w:0, g:0}; e.g++; if (i === wt) e.w++; board[q.name] = e; }));
+  saveJSON('pong-board', board);
+  const r = await card(teamName(wt).toUpperCase() + (wteam.players.length > 1 ? ' GAGNENT !' : ' GAGNE !'), 'Il reste ' + aliveCups(wt).length + ' verre' + (aliveCups(wt).length > 1 ? 's' : '') + ' de pastis au vainqueur. ' + (gage ? 'Gage pour ' + teamName(1 - wt) + ' : ' + GAGES[ri(GAGES.length)] + ' !' : teamName(1 - wt) + (lt.players.length > 1 ? ' paient' : ' paie') + ' la tournée… santé !'), [{label:'REJOUER', value:1}, {label:'MENU', value:0, cls:'alt'}], {who:w, mood:'grin', col:wteam.col});
+  r ? startGame() : showMenu();
+}
+
+/* ---------- cartes plein écran ---------- */
+function card(title, txt, buttons, opts = {}) {
+  return new Promise(res => {
+    $('card').style.setProperty('--c', opts.col || '#ffd23f');
+    $('card').style.setProperty('--al', opts.left ? 'left' : 'center');
+    $('card-title').textContent = title; $('card-text').textContent = txt;
+    const ico = $('card-ico'), g = ico.getContext('2d'); g.clearRect(0, 0, 24, 28);
+    ico.hidden = !!opts.noIcon; if (!opts.noIcon) g.drawImage(bust(opts.who || null, opts.mood || 'grin'), 0, 0);
+    const box = $('card-btns'); box.innerHTML = '';
+    buttons.forEach(b => {
+      const el = document.createElement('button'); el.type = 'button'; el.className = b.cls || '';
+      if (b.icon) { const cv = document.createElement('canvas'); cv.width = 20; cv.height = 20; drawSuperIcon(cv.getContext('2d'), b.icon); el.append(cv); const d = document.createElement('div'); d.innerHTML = '<b>' + esc(b.label) + '</b><span>' + esc(b.desc) + '</span>'; el.append(d); }
+      else el.textContent = b.label;
+      el.addEventListener('click', () => { initAudio(); $('card').hidden = true; res(b.value); });
+      box.append(el);
+    });
+    $('card').hidden = false; $('card').scrollTop = 0;
+  });
+}
+$('super').addEventListener('click', async () => {
+  const tm = teams[tcur]; if (!tm || tm.gauge < 1 || state !== 'aim' || trap[1 - tcur]) return;
+  initAudio();
+  const opp = teamName(1 - tcur);
+  const k = await card('POSE TON PIÈGE', 'Ton pastis est bien louche, ' + shooter().name + ' !\nChoisis en secret le piège qui attend ' + opp + ' à son prochain tour.' + (mode === 'multi' ? '\nCache bien l\'écran !' : ''), tm.avail.map(s => ({label:SUPERS[s].name, desc:SUPERS[s].txt, icon:s, value:s, cls:'sa'})).concat([{label:'PLUS TARD', value:'', cls:'alt'}]), {who:shooter(), mood:'grin', col:'#f3ead0'});
+  if (!k || state !== 'aim' || trap[1 - tcur]) return;
+  tm.gauge = 0; if (mode !== 'multi') SFX.super();
+  trap[1 - tcur] = {k, owner:tcur, ball:ri(2)};
+  if (mode !== 'multi') say('PIÈGE POSÉ… CHUT !', '#f3ead0', 1.4);
+  syncSuper();
+});
+
+/* ---------- commandes tactiles ---------- */
+function toC(e) { const r = canvas.getBoundingClientRect(); return {x:(e.clientX - r.left) / r.width * W, y:(e.clientY - r.top) / r.height * H}; }
+function toBoard(q) { const d = rot(va, q.x - CX, q.y - CY); return {x:CX + d.x, y:CY + d.y}; }
+canvas.addEventListener('pointerdown', e => {
+  if (!$('overlay').hidden || !$('card').hidden || !teams.length) return;
+  e.preventDefault(); initAudio();
+  const q = toC(e);
+  if (state === 'flying' && ball && ball.trap === 'guide' && !teams[ball.tr.owner].ai) { steering = true; steerPt = toBoard(q); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} return; }
+  if (state === 'shield') {
+    const bq = toBoard(q), c = aliveCups(tcur).find(o => Math.hypot(o.x - bq.x, o.y - bq.y) < CR + 8);
+    if (c) { c.shield = 2; SFX.block(); shieldPick = false; state = 'aim'; say('VERRE PROTÉGÉ PENDANT 2 TOURS', '#f4ecd8', 1.4); syncSuper(); }
+    return;
+  }
+  if (state !== 'aim' || teams[tcur].ai) return;
+  drag = {sx:q.x, sy:q.y, x:q.x, y:q.y, len:0};
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+});
+canvas.addEventListener('pointermove', e => {
+  const q = toC(e);
+  if (steering && state === 'flying') { steerPt = toBoard(q); return; }
+  if (!drag) return;
+  drag.x = q.x; drag.y = q.y; drag.len = Math.hypot(drag.x - drag.sx, drag.y - drag.sy);
+});
+canvas.addEventListener('pointerup', () => {
+  if (steering) { steering = false; steerPt = null; return; }
+  if (!drag) return;
+  const d = drag;
+  if (d.len < 16 || state !== 'aim') { drag = null; return; }
+  const a = aimParams(); drag = null;
+  const bl = blind ? 2.2 : 1;
+  throwBall({x:a.L.x + gauss() * 9 * bl, y:a.L.y + gauss() * 9 * bl}, null);
+});
+canvas.addEventListener('pointercancel', () => { drag = null; steering = false; });
+window.addEventListener('keydown', e => {
+  if (e.key && e.key.toLowerCase() === 'm' && document.activeElement.tagName !== 'INPUT') $('mute').click();
+});
+window.addEventListener('keyup', e => { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { steering = false; steer = 0; } });
+
+/* ---------- menus ---------- */
+function seg(id, attr, fn) { document.querySelectorAll('#' + id + ' button').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); fn(b.dataset[attr]); })); }
+const savedNames = loadJSON('pong-names', ['Youky', 'Jojo', 'Ginette', 'Dédé']);
+function renderPlist() {
+  const el = $('plist'), keep = [0, 1, 2, 3].map(i => ($('pn' + i) || {}).value);
+  el.innerHTML = '';
+  const n = mode === 'multi' ? nPlayers : 1;
+  for (let i = 0; i < n; i++) {
+    const l = document.createElement('label'); l.style.setProperty('--c', PCOLS[i]);
+    l.innerHTML = `<span>${n === 1 ? 'TON NOM OU PSEUDO' : 'JOUEUR ' + (i + 1) + (n > 2 ? (i % 2 ? ' · ÉQUIPE BLEUE' : ' · ÉQUIPE ORANGE') : '')}</span>`;
+    const inp = document.createElement('input'); inp.id = 'pn' + i; inp.maxLength = 10; inp.placeholder = 'Nom ou pseudo'; inp.autocomplete = 'off';
+    inp.value = keep[i] != null ? keep[i] : (savedNames[i] || (i ? 'Joueur ' + (i + 1) : 'Youky'));
+    l.append(inp); el.append(l);
+  }
+  el.style.gridTemplateColumns = n === 1 ? '1fr' : '1fr 1fr';
+}
+function renderRoster() {
+  const prog = loadJSON('pong-story', 0);
+  storySel = Math.min(storySel, Math.min(prog, 4));
+  $('roster').innerHTML = '';
+  BOSSES.forEach((b, i) => {
+    const el = document.createElement('button'); el.type = 'button'; el.disabled = i > prog; el.className = i < prog ? 'done' : '';
+    el.setAttribute('aria-pressed', String(i === storySel));
+    const cv = document.createElement('canvas'); cv.width = 24; cv.height = 28; cv.getContext('2d').drawImage(bust({who:b.who || 'npc', boss:b}, i < prog ? 'meh' : 'grin'), 0, 0);
+    el.append(cv); el.insertAdjacentHTML('beforeend', `<span>${esc(b.short)}</span><b>${i < prog ? 'BATTU' : b.boss ? 'BOSS' : 'N° ' + (i + 1)}</b>`);
+    el.addEventListener('click', () => { storySel = i; renderRoster(); refreshMenu(); });
+    $('roster').append(el);
+  });
+  const b = BOSSES[storySel];
+  $('storyhint').textContent = b.short + ' · ' + ARENAS[b.arena].name + ' · son piège : ' + SUPERS[b.sa].name.toLowerCase() + '.' + (prog >= 5 ? ' Tournoi terminé, bravo !' : '');
+}
+function refreshMenu() {
+  $('storyset').hidden = mode !== 'story'; $('multiset').hidden = mode !== 'multi';
+  renderPlist(); if (mode === 'story') renderRoster();
+  $('start').textContent = mode === 'story' ? 'Affronter ' + BOSSES[storySel].short : nPlayers === 2 ? 'Jouer à 2' : 'Jouer à ' + nPlayers + ' (équipes)';
+}
+seg('mode', 'm', v => { mode = v; refreshMenu(); });
+seg('nbp', 'n', v => { nPlayers = +v; refreshMenu(); });
+const RULES = 'Chaque camp a une pyramide de 10 verres de pastis.\n\n' +
+  '• Pose le doigt, tire en arrière et relâche : plus tu tires, plus la balle va loin. Le cercle pointillé montre à peu près où elle va tomber (il bouge : à toi de doser !).\n' +
+  '• Tu as 2 balles par tour. Une balle dans un verre : le verre disparaît.\n' +
+  '• Balle qui rebondit sur la table puis tombe dans un verre : 2 verres d\'un coup !\n' +
+  '• Une balle sur le rebord tourne… et tombe dedans une fois sur deux.\n' +
+  '• Tes 2 balles rentrent ? BALLES EN FEU : tu rejoues !\n' +
+  '• À 6 puis à 3 verres, on les resserre en triangle.\n' +
+  '• Le premier qui n\'a plus de verre a perdu.\n\n' +
+  'Chaque verre touché remplit ton pastis d\'eau. Quand il est louche, appuie sur le bouton et POSE UN PIÈGE en secret : il attend ton adversaire à son prochain tour, sur une de ses 2 balles. Avec un peu de chance, sa balle peut quand même rentrer !\n\n' +
+  'À plusieurs, posez le téléphone à plat entre vous : la table se retourne à chaque tour.';
+$('rules').addEventListener('click', () => card('LES RÈGLES DU PASTIS PONG', RULES, [{label:'C\'EST PARTI', value:1}], {mood:'grin', left:true}));
+async function storyIntro() {
+  $('overlay').hidden = true; state = 'title';
+  const prog = loadJSON('pong-story', 0), b = BOSSES[storySel], mine = ['tete', 'glacon', 'bouclier', ...BOSSES.slice(0, Math.min(prog, 5)).map(x => x.sa)];
+  const k = await card(b.name, b.intro + '\n\nSon piège : ' + SUPERS[b.sa].name + '.\n' + b.faille + '\n\nChoisis ton piège pour ce match :', mine.map(s => ({label:SUPERS[s].name, desc:SUPERS[s].txt, icon:s, value:s, cls:'sa'})).concat([{label:'RETOUR AU MENU', value:'', cls:'alt'}]), {who:{who:b.who || 'npc', boss:b}, mood:'grr', col:b.col});
+  if (!k) return showMenu();
+  storyPick = k;
+  startGame();
+}
+$('start').addEventListener('click', () => { initAudio(); gage = $('gage').checked; if (mode === 'story') return storyIntro(); startGame(); });
+function renderPalm() {
+  const board = loadJSON('pong-board', {}), prog = loadJSON('pong-story', 0);
+  const rows = Object.entries(board).sort((a, b) => b[1].w - a[1].w).slice(0, 5);
+  $('palm').innerHTML = '<h2>PALMARÈS DU COMPTOIR</h2><ol>' +
+    `<li><span>Tournoi du comptoir</span><span>${Math.min(prog, 5)} / 5</span></li>` +
+    rows.map(([n, v], i) => `<li><span>${i + 1}. ${esc(n)}</span><span>${v.w} victoire${v.w > 1 ? 's' : ''} / ${v.g}</span></li>`).join('') + '</ol>';
+}
+function showMenu() {
+  state = 'title'; $('card').hidden = true; ball = null; aiShot = null; teams = []; newCups(); arena = 'bistrot'; bottle = null; va = targetVa = 0;
+  renderPalm(); refreshMenu();
+  $('overlay').hidden = false; $('overlay').scrollTop = 0; syncSuper();
+}
+$('menu').addEventListener('click', async () => {
+  if (state === 'title') return;
+  const r = await card('RETOUR AU MENU ?', 'La partie en cours sera abandonnée.', [{label:'OUI, MENU', value:1}, {label:'NON, ON CONTINUE', value:0, cls:'alt'}], {mood:'o'});
+  if (r) showMenu();
+});
+$('mute').addEventListener('click', () => {
+  initAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5;
+  try { localStorage.setItem('pastisman-muted', muted ? '1' : '0'); } catch (e) {}
+  $('mute').textContent = muted ? '♪ MUET' : '♪ SON'; $('mute').setAttribute('aria-pressed', String(muted));
+});
+if (muted) { $('mute').textContent = '♪ MUET'; $('mute').setAttribute('aria-pressed', 'true'); }
+document.addEventListener('visibilitychange', () => { if (actx) document.hidden ? actx.suspend() : actx.resume(); });
+function fit() { mkFit(canvas, W, H); }
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+window.addEventListener('load', fit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+
+$('c-hero').getContext('2d').drawImage(heroSpr('grin'), 0, 0);
+$('c-bear').getContext('2d').drawImage(bearSpr('grin'), 0, 0);
+$('c-cup').getContext('2d').drawImage(cupSpr('#f27a1a', ''), 0, 0);
+newCups();
+renderPalm(); refreshMenu(); fit(); requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
